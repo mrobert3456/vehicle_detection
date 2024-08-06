@@ -30,6 +30,10 @@ git clone https://github.com/mrobert3456/vehicle_detection.git
 cd vehicle_detection
 ```
 
+## YOLOv3 coco dataset
+The necessary files (*coco.names*, *yolov3.cfg*, *yolov3.weights*) can be downloaded at:
+https://www.kaggle.com/datasets/valentynsichkar/yolo-coco-data
+
 ## ⚡ Software Dependencies
 
 This project utilizes the following packages:
