@@ -2,6 +2,7 @@ import sys
 import cv2 as cv
 import numpy as np
 from utils.image_roi import get_image_roi
+from tqdm import tqdm
 
 f = open('data/coco.names', 'rb')
 labels = list(n.decode('UTF-8').replace('\n', ' ').strip() for n in f.readlines())
@@ -26,6 +27,10 @@ threshold = 0.2
 layers_all = network.getLayerNames()
 layers_names_output = [layers_all[i - 1] for i in network.getUnconnectedOutLayers()]
 
+writer = None
+global frameArray
+frameArray = []
+
 
 def process_video(video_path: str):
     capture = cv.VideoCapture(video_path)
@@ -35,7 +40,7 @@ def process_video(video_path: str):
 
         if not ret:
             break
-
+        frame = cv.resize(frame, (1280, 720))
         if w is None or h is None:
             # Slicing two elements from tuple
             h, w = frame.shape[:2]
@@ -65,7 +70,7 @@ def process_video(video_path: str):
                 # Getting probability values for current class
                 confidence_current = scores[class_current]
 
-                if confidence_current > probability_minimum:
+                if labels[class_current] in ["car", "truck", "motorbike"] and confidence_current > probability_minimum:
                     # Scaling bounding box coordinates to the initial frame size
                     box_current = detected_objects[0:4] * np.array([w, h, w, h])
 
@@ -81,7 +86,6 @@ def process_video(video_path: str):
         # Implementing non-maximum suppression of given bounding boxes
         # this will get only the relevant bounding boxes (there might be more which crosses each other, and etc)
         results = cv.dnn.NMSBoxes(bounding_boxes, confidences, probability_minimum, threshold)
-
         if len(results) > 0:
             for i in results.flatten():
                 # Bounding box coordinates, its width and height
@@ -92,6 +96,14 @@ def process_video(video_path: str):
                              (x_min + box_width, y_min + box_height),
                              (0, 255, 0), 2)
 
+                text_box_current = '{}: {:.4f}'.format(labels[class_numbers[i]],
+                                                       confidences[i])
+
+                cv.putText(frame, text_box_current, (x_min, y_min - 5),
+                           cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+                frameArray.append(frame)
+
         cv.imshow('frame', frame)
 
         if cv.waitKey(1) & 0xFF == ord('q'):
@@ -100,10 +112,29 @@ def process_video(video_path: str):
     cv.destroyAllWindows()
 
 
+def writeVideo(resVideoName):
+    fpsCount = 25
+    fourcc = cv.VideoWriter_fourcc(*'mp4v')
+    writer = cv.VideoWriter(resVideoName, fourcc, fpsCount,
+                            (1280, 720), True)
+    print(len(frameArray))
+    start = 0
+    for i in range(0, len(frameArray)):
+
+        if ((start + fpsCount) < len(frameArray) - 1):
+            end = start + fpsCount
+            for j in tqdm(range(start, end)):
+                writer.write(frameArray[j])
+
+        start = start + fpsCount
+    writer.release()
+
+
 if __name__ == '__main__':
     argCount = len(sys.argv)
     inputFile = str(sys.argv[1]) if argCount >= 2 else 'ts_test2.mp4'
     process_video(inputFile)
+    #writeVideo("output.mp4")
 
 # https://www.kaggle.com/code/utkarshsaxenadn/car-detection-yolo-v3-opencv
 # https://www.kaggle.com/datasets/valentynsichkar/yolo-coco-data
