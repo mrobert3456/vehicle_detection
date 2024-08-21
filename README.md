@@ -19,6 +19,8 @@
 11. **Non-maximum suppression** of given bounding boxes
 12. **Draw bounding boxes** on the input frame
 
+For detailed description of how it works, please check out my blog on Medium:
+https://medium.com/@mrobert3456/vehicle-detection-using-yolov3-c5f426a3fa92
 ---
 # 📦 Installation
 
